@@ -1,1 +1,1 @@
-# IF Fulcrum Docker PHP 7.2.17 Drush 8 
+# IF Fulcrum Docker PHP 7.2.18 Drush 8 
