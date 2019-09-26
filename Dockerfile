@@ -2,6 +2,7 @@ FROM alpine:3.9
 MAINTAINER IF Fulcrum "fulcrum@ifsight.net"
 
 RUN STARTTIME=$(date "+%s")                                                                    && \
+ALPINE_VER=3.9                                                                                && \
 PHPV0=7                                                                                        && \
 PHPV1=2                                                                                        && \
 echo "################## [$(date)] Setup PHP $PHPV0.$PHPV1 Preflight vars ##################"  && \
@@ -13,22 +14,25 @@ PKGS3="pgsql|redis|simplexml|soap|sockets|tokenizer|xml|xmlreader|xmlwriter|xdeb
 PKGS="$PKGS1|$PKGS2|$PKGS3"                                                                    && \
 BLACKFURL=https://blackfire.io/api/v1/releases/probe/php/alpine/amd64/$PHPV0$PHPV1             && \
 NEW_RELIC_URL=https://download.newrelic.com/php_agent/release                                  && \
-echo "################## [$(date)] Add Packages ##################"                            && \
-apk update --no-cache && apk upgrade --no-cache                                                && \
-apk add --no-cache curl curl-dev mysql-client postfix                                          && \
-apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community gnu-libiconv && \
-apk add --no-cache --virtual gen-deps alpine-sdk autoconf binutils libbz2 libpcre16 libpcre32     \
-  libpcrecpp m4 pcre-dev perl                                                                  && \
+echo "################## [$(date)] Add Curl ##################"                                && \
+apk add --no-cache curl                                                                        && \
 echo "################## [$(date)] Get PHP $PHPV0.$PHPV1 point upgrade ##################"     && \
 PHPV2=$(curl -s $PHPCHGURL|grep -Eo "$PHPV0\.$PHPV1\.\d+"|cut -d\. -f3|sort -n|tail -1)        && \
 PHPVER=$PHPV0.$PHPV1.$PHPV2                                                                    && \
+echo "################## [$(date)] PHP Version $PHPVER ##################"                     && \
+echo "################## [$(date)] Add Packages ##################"                            && \
+apk update --no-cache && apk upgrade --no-cache                                                && \
+apk add --no-cache curl-dev mysql-client postfix                                               && \
+apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community gnu-libiconv && \
+apk add --no-cache --virtual gen-deps alpine-sdk autoconf binutils libbz2 libpcre16 libpcre32     \
+  libpcrecpp m4 pcre-dev pcre2 pcre2-dev perl                                                  && \
 echo "################## [$(date)] Setup PHP $PHPVER build environment ##################"     && \
 adduser -D abuild -G abuild -s /bin/sh                                                         && \
 mkdir -p /var/cache/distfiles                                                                  && \
 chmod a+w /var/cache/distfiles                                                                 && \
 echo "abuild ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/abuild                                  && \
-su - abuild -c "git clone -v https://github.com/alpinelinux/aports.git aports"                 && \
-su - abuild -c "cd aports && git checkout 3.9-stable"                                          && \
+su - abuild -c "git clone -v --depth 1 --single-branch --branch $ALPINE_VER-stable https://github.com/alpinelinux/aports.git aports"                 && \
+su - abuild -c "cd aports && git checkout $ALPINE_VER-stable"                                  && \
 su - abuild -c "cd aports && git pull"                                                         && \
 su - abuild -c "cd aports/community/php$PHPV0 && abuild -r deps"                               && \
 su - abuild -c "git config --global user.name \"IF Fulcrum\""                                  && \
@@ -36,8 +40,8 @@ su - abuild -c "git config --global user.email \"fulcrum@ifsight.net\""         
 su - abuild -c "echo ''|abuild-keygen -a -i"                                                   && \
 echo&&\
 echo&&\
-echo "################## [$(date)] Use Alpine's bump command ##################"               && \
-su - abuild -c "cd aports/community/php$PHPV0 && abump -k php$PHPV0-$PHPVER"                   && \
+echo "################## [$(date)] Use Alpine's bump command (ignore failed error) #######"    && \
+su - abuild -c "cd aports/community/php$PHPV0 && abump -k php$PHPV0-$PHPVER || :"              && \
 echo "################## [$(date)] Install initial and dev PHP packages ##################"    && \
 apk add --allow-untrusted $(find $PGKDIR|egrep "php$PHPV0-((common|session)-)?$PHPV0")         && \
 apk add --allow-untrusted --no-cache --virtual php-deps                                           \
