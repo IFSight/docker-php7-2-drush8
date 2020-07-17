@@ -88,7 +88,10 @@ deluser php                                                                     
 adduser -h /phphome -s /bin/sh -D -H -u 1971 php                                               && \
 mkdir -p /usr/share/drush/commands /phphome drush8                                             && \
 chown php.php /phphome drush8                                                                  && \
-su - php -c "cd /usr/local/drush8 && composer require drush/drush:8.*"                         && \
+su - php -c "cd /usr/local/drush8 && composer require                                             \
+  'drush/drush:8.*' 'symfony/console:~2.7|^3' 'symfony/event-dispatcher:~2.7|^3'                  \
+  'symfony/finder:~2.7|^3' 'symfony/process:~2.7|^3' 'symfony/var-dumper:~2.7|^3'                 \
+  'symfony/yaml:~2.3|^3'"                                                                      && \
 ln -s /usr/local/drush8/vendor/drush/drush/drush /usr/local/bin/drush                          && \
 su - php -c "/usr/local/bin/drush @none dl registry_rebuild-7.x"                               && \
 mv /phphome/.drush/registry_rebuild /usr/share/drush/commands/                                 && \
